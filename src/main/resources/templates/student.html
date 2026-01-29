@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Quản lý Sinh viên</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 min-h-screen flex justify-center items-start p-10">
+    <div class="bg-white w-full max-w-4xl rounded-xl shadow p-6">
+      <h1 class="text-2xl font-bold mb-6 text-center">🎓 Quản lý Sinh viên</h1>
+
+      <!-- FORM -->
+      <div class="flex gap-3 mb-6">
+        <input
+          id="name"
+          type="text"
+          placeholder="Tên"
+          class="border p-2 rounded w-1/2"
+        />
+        <input
+          id="age"
+          type="number"
+          placeholder="Tuổi"
+          class="border p-2 rounded w-1/4"
+        />
+        <button
+          onclick="saveStudent()"
+          class="bg-blue-600 text-white px-4 rounded hover:bg-blue-700"
+        >
+          Lưu
+        </button>
+      </div>
+
+      <!-- TABLE -->
+      <table class="w-full border">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="border p-2">ID</th>
+            <th class="border p-2">Tên</th>
+            <th class="border p-2">Tuổi</th>
+            <th class="border p-2">Hành động</th>
+          </tr>
+        </thead>
+        <tbody id="studentTable"></tbody>
+      </table>
+    </div>
+
+    <script>
+      const API = "http://localhost:8081/api/students";
+      let editingId = null;
+
+      // LOAD DATA
+      async function loadStudents() {
+        const res = await fetch(API);
+        const data = await res.json();
+
+        const table = document.getElementById("studentTable");
+        table.innerHTML = "";
+
+        data.forEach((s) => {
+          table.innerHTML += `
+            <tr>
+                <td class="border p-2 text-center">${s.id}</td>
+                <td class="border p-2">${s.name}</td>
+                <td class="border p-2 text-center">${s.age}</td>
+                <td class="border p-2 text-center">
+                    <button onclick="editStudent(${s.id}, '${s.name}', ${s.age})"
+                            class="bg-yellow-400 px-2 rounded mr-2">Sửa</button>
+                    <button onclick="deleteStudent(${s.id})"
+                            class="bg-red-500 text-white px-2 rounded">Xóa</button>
+                </td>
+            </tr>
+        `;
+        });
+      }
+
+      // SAVE (ADD / UPDATE)
+      async function saveStudent() {
+        const name = document.getElementById("name").value;
+        const age = document.getElementById("age").value;
+
+        if (!name || !age) {
+          alert("Nhập đủ tên và tuổi");
+          return;
+        }
+
+        const student = { name, age };
+
+        if (editingId === null) {
+          await fetch(API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(student),
+          });
+        } else {
+          await fetch(`${API}/${editingId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(student),
+          });
+          editingId = null;
+        }
+
+        document.getElementById("name").value = "";
+        document.getElementById("age").value = "";
+
+        loadStudents();
+      }
+
+      // EDIT
+      function editStudent(id, name, age) {
+        editingId = id;
+        document.getElementById("name").value = name;
+        document.getElementById("age").value = age;
+      }
+
+      // DELETE
+      async function deleteStudent(id) {
+        if (!confirm("Xóa sinh viên này?")) return;
+
+        await fetch(`${API}/${id}`, { method: "DELETE" });
+        loadStudents();
+      }
+
+      // INIT
+      loadStudents();
+    </script>
+  </body>
+</html>
